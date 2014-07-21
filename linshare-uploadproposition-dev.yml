@@ -1,0 +1,55 @@
+# Documentation : https://dropwizard.github.io/dropwizard/manual/configuration.html
+
+# LinShare core settings.
+linshare:
+
+  # the URL
+  url: http://ubuntu1:8080/linshare/webservice/rest/uploadproposition
+
+  # the username
+  login: 89877610-574a-4e79-aeef-5606b96bde35
+
+  # the password
+  password: adminlinshare
+
+  # LinShare domain identifier
+  # domain: identifier
+
+  sendRejected: False
+
+# use the simple server factory if you only want to run on a single port
+#server:
+#  type: simple
+#  connector:
+#    type: http
+#    port: 8080
+
+server:
+  type: default
+#  softNofileLimit: 1000
+#  hardNofileLimit: 1000
+  applicationConnectors:
+    - type: http
+      port: 9080
+#  adminConnectors:
+#    - type: http
+#      port: 9081
+
+
+# Logging settings.
+logging:
+
+  # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
+  level: INFO
+
+  # Logger-specific levels.
+  loggers:
+
+    # Sets the level for 'org.linagora.linshare.uploadproposition' to DEBUG.
+    org.linagora.linshare.uploadproposition: DEBUG
+
+  appenders:
+    - type: console
+      threshold: ALL
+      target: stdout
+      timeZone: UTC
