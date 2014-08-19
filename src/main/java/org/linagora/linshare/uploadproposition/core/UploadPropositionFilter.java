@@ -5,6 +5,7 @@ import java.util.List;
 import javax.validation.Valid;
 
 import org.hibernate.validator.constraints.NotEmpty;
+import org.linagora.linshare.uploadproposition.enums.MatchType;
 
 import com.google.common.collect.Lists;
 
@@ -17,7 +18,7 @@ public class UploadPropositionFilter {
 	protected String name;
 
 	@NotEmpty
-	protected boolean matchAll;
+	protected String match;
 
 	@Valid
 	protected List<UploadPropositionRule> uploadPropositionRules = Lists
@@ -47,12 +48,12 @@ public class UploadPropositionFilter {
 		this.name = name;
 	}
 
-	public boolean isMatchAll() {
-		return matchAll;
+	public String getMatch() {
+		return match;
 	}
 
-	public void setMatchAll(boolean matchAll) {
-		this.matchAll = matchAll;
+	public void setMatch(String match) {
+		this.match = match;
 	}
 
 	public List<UploadPropositionRule> getUploadPropositionRules() {
@@ -76,16 +77,20 @@ public class UploadPropositionFilter {
 	@Override
 	public String toString() {
 		return "UploadPropositionFilter [uuid=" + uuid + ", name=" + name
-				+ ", matchAll=" + matchAll + ", uploadPropositionRules="
+				+ ", match=" + match + ", uploadPropositionRules="
 				+ uploadPropositionRules + ", uploadPropositionActions="
 				+ uploadPropositionActions + "]";
 	}
 
 	public boolean match(UploadRequest req) {
 		int successCpt = 0;
+		MatchType matchType = MatchType.fromString(this.match);
+		if (matchType.equals(MatchType.TRUE)) {
+			return true;
+		}
 		for (UploadPropositionRule rule : uploadPropositionRules) {
 			if (rule.match(req)) {
-				if (!isMatchAll()) {
+				if (matchType.equals(MatchType.ANY)) {
 					// only one match is enough
 					return true;
 				}

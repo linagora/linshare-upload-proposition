@@ -1,6 +1,8 @@
 package org.linagora.linshare.uploadproposition.core;
 
 import org.hibernate.validator.constraints.NotEmpty;
+import org.linagora.linshare.uploadproposition.enums.RuleField;
+import org.linagora.linshare.uploadproposition.enums.RuleOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,21 +65,19 @@ public class UploadPropositionRule {
 	}
 
 	public boolean match(UploadRequest req) {
-		if (this.operator.equals("TRUE")) {
-			return true;
-		}
 		String compare = null;
-		switch (this.field) {
-		case "SENDER_EMAIL":
+		RuleField field = RuleField.fromString(this.field);
+		switch (field) {
+		case SENDER_EMAIL:
 			compare = req.getMail();
 			break;
-		case "RECIPIENT_EMAIL":
+		case RECIPIENT_EMAIL:
 			compare = req.getRecipientMail();
 			break;
-		case "RECIPIENT_DOMAIN":
+		case RECIPIENT_DOMAIN:
 			// To be implemented.
 			return false;
-		case "SUBJECT":
+		case SUBJECT:
 			compare = req.getSubject();
 			break;
 		default:
@@ -90,22 +90,7 @@ public class UploadPropositionRule {
 		if (value == null) {
 			return false;
 		}
-		switch (this.operator) {
-		case "CONTAIN":
-			return value.contains(compare);
-		case "DO_NOT_CONTAIN":
-			return !value.contains(compare);
-		case "EQUAL":
-			return value.equals(compare);
-		case "DO_NOT_EQUAL":
-			return !value.equals(compare);
-		case "BEGIN_WITH":
-			return value.startsWith(compare);
-		case "END_WITH":
-			return value.endsWith(compare);
-		default:
-			logger.error("Unknown operator " + this.operator + " on rule : " + uuid);
-			return false;
-		}
+		RuleOperator op = RuleOperator.fromString(this.operator);
+		return op.check(value, compare);
 	}
 }
