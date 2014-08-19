@@ -1,4 +1,4 @@
-package org.linagora.linshare.uploadproposition;
+package org.linagora.linshare.uploadproposition.config;
 
 import org.hibernate.validator.constraints.NotEmpty;
 

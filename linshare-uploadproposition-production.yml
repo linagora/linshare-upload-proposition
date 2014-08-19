@@ -17,6 +17,9 @@ linshare:
 
   sendRejected: False
 
+#captcha:
+#  privateKey: Your Recaptcha private key
+
 # use the simple server factory if you only want to run on a single port
 #server:
 #  type: simple

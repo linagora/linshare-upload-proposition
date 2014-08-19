@@ -1,4 +1,4 @@
-package org.linagora.linshare.uploadproposition;
+package org.linagora.linshare.uploadproposition.config;
 
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;

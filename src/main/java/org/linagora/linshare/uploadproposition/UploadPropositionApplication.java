@@ -6,6 +6,8 @@ import io.dropwizard.setup.Environment;
 
 import java.net.Authenticator;
 
+import org.linagora.linshare.uploadproposition.config.LinShareAuthenticator;
+import org.linagora.linshare.uploadproposition.config.UploadPropositionConfiguration;
 import org.linagora.linshare.uploadproposition.health.LinShareCoreCheck;
 import org.linagora.linshare.uploadproposition.resources.UploadPropositionResource;
 import org.slf4j.Logger;
@@ -43,7 +45,7 @@ public class UploadPropositionApplication extends Application<UploadPropositionC
         ClientConfig cc = new DefaultClientConfig();
         cc.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
         Client client = Client.create(cc);
-        UploadPropositionResource propositionResource = new UploadPropositionResource(client, configuration.getServer());
+        UploadPropositionResource propositionResource = new UploadPropositionResource(client, configuration.getServer(), configuration.getCaptcha());
         environment.healthChecks().register("LinShare-Core", new LinShareCoreCheck(propositionResource));
 		environment.jersey().register(propositionResource);
     }

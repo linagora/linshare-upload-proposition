@@ -3,18 +3,28 @@ package org.linagora.linshare.uploadproposition.resources;
 import java.io.IOException;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
+
+import net.tanesha.recaptcha.ReCaptchaImpl;
+import net.tanesha.recaptcha.ReCaptchaResponse;
 
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
-import org.linagora.linshare.uploadproposition.LinShareCoreServer;
+import org.eclipse.jetty.http.HttpStatus;
+import org.linagora.linshare.uploadproposition.config.LinShareCoreServer;
+import org.linagora.linshare.uploadproposition.config.RecaptchaConfig;
+import org.linagora.linshare.uploadproposition.core.LinShareError;
 import org.linagora.linshare.uploadproposition.core.UploadProposition;
 import org.linagora.linshare.uploadproposition.core.UploadPropositionFilter;
 import org.linagora.linshare.uploadproposition.core.UploadRequest;
@@ -22,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.annotation.Timed;
+import com.sun.jersey.api.Responses;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -37,9 +48,13 @@ public class UploadPropositionResource {
 
 	private final LinShareCoreServer server;
 
-	public UploadPropositionResource(Client client, LinShareCoreServer server) {
+	private final RecaptchaConfig captcha;
+
+	public UploadPropositionResource(Client client, LinShareCoreServer server,
+			RecaptchaConfig captcha) {
 		this.client = client;
 		this.server = server;
+		this.captcha = captcha;
 	}
 
 	@GET
@@ -50,12 +65,29 @@ public class UploadPropositionResource {
 
 	@POST
 	@Timed(name = "post-uploadpropositions")
-	public UploadProposition create(@Valid UploadProposition proposition) {
+	public Response create(@Valid UploadProposition proposition,
+			@Context HttpServletRequest httpRequest) {
 		logger.debug("input  proposition : " + proposition.toString());
 
-		// TODO check the captcha.
-		UploadRequest req = new UploadRequest(proposition);
+		String privateKey = captcha.getPrivateKey();
+		if (privateKey != null) {
+			ReCaptchaImpl reCaptcha = new ReCaptchaImpl();
+			reCaptcha.setRecaptchaServer(ReCaptchaImpl.HTTPS_SERVER);
+			reCaptcha.setPrivateKey(privateKey);
+			String challenge = proposition.getCaptcha_challenge();
+			String response = proposition.getCaptcha_response();
+			// it seems that recaptcha does not care about remote address.
+			ReCaptchaResponse reCaptchaResponse = reCaptcha.checkAnswer("42",
+					challenge, response);
+			if (!reCaptchaResponse.isValid()) {
+				logger.warn("Captcha failed.");
+				ResponseBuilder error = Responses.clientError();
+				error.entity(new LinShareError(1000, "Captcha failed."));
+				return error.build();
+			}
+		}
 
+		UploadRequest req = new UploadRequest(proposition);
 		if (checkAndApply(req)) {
 			req.setRecipientDomain(server.getDomain());
 			logger.debug("pre accepted proposition : " + req.toString());
@@ -65,10 +97,12 @@ public class UploadPropositionResource {
 			logger.debug("rejected proposition : " + req.toString());
 			logger.info("one proposition was rejected.");
 		}
-		return proposition;
+		proposition.setCaptcha_challenge(null);
+		proposition.setCaptcha_response(null);
+		return Response.status(HttpStatus.OK_200).entity(proposition).build();
 	}
 
-	public boolean getFiltersIsOK(){
+	public boolean getFiltersIsOK() {
 		try {
 			List<UploadPropositionFilter> filters = getFilters();
 			if (filters != null) {

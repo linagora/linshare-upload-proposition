@@ -1,4 +1,4 @@
-package org.linagora.linshare.uploadproposition;
+package org.linagora.linshare.uploadproposition.config;
 
 import io.dropwizard.Configuration;
 
@@ -12,6 +12,8 @@ public class UploadPropositionConfiguration extends Configuration {
     @Valid
     @NotNull
     private LinShareCoreServer server = new LinShareCoreServer();
+    
+    private RecaptchaConfig captcha = new RecaptchaConfig();
 
 	@JsonProperty("linshare")
     public LinShareCoreServer getServer() {
@@ -22,4 +24,15 @@ public class UploadPropositionConfiguration extends Configuration {
 	public void setServer(LinShareCoreServer server) {
 		this.server = server;
 	}
+
+	@JsonProperty("captcha")
+	public RecaptchaConfig getCaptcha() {
+		return captcha;
+	}
+
+	@JsonProperty("captcha")
+	public void setCaptcha(RecaptchaConfig captcha) {
+		this.captcha = captcha;
+	}
+	
 }
