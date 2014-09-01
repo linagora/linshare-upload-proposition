@@ -89,14 +89,18 @@ public class UploadPropositionResource {
 
 		UploadRequest req = new UploadRequest(proposition);
 		if (checkAndApply(req)) {
-			req.setRecipientDomain(server.getDomain());
-			logger.debug("pre accepted proposition : " + req.toString());
-			post(req);
-			logger.info("one proposition was created.");
-		} else {
-			logger.debug("rejected proposition : " + req.toString());
-			logger.info("one proposition was rejected.");
+			if (checkRecipient(req)) {
+				req.setRecipientDomain(server.getDomain());
+				logger.debug("pre accepted proposition : " + req.toString());
+				post(req);
+				logger.info("one proposition was created.");
+				proposition.setCaptcha_challenge(null);
+				proposition.setCaptcha_response(null);
+				return Response.status(HttpStatus.OK_200).entity(proposition).build();
+			}
 		}
+		logger.debug("rejected proposition : " + req.toString());
+		logger.info("one proposition was rejected.");
 		proposition.setCaptcha_challenge(null);
 		proposition.setCaptcha_response(null);
 		return Response.status(HttpStatus.OK_200).entity(proposition).build();
@@ -167,5 +171,20 @@ public class UploadPropositionResource {
 		Builder builder = filtersWr.accept(MediaType.APPLICATION_JSON_TYPE);
 		builder.type(MediaType.APPLICATION_JSON_TYPE);
 		builder.post(req);
+	}
+
+	private boolean checkRecipient(UploadRequest req) {
+		WebResource defaultWr = client.resource(server.getUrl());
+		WebResource filtersWr = defaultWr.path("recipients/"+req.getRecipientMail());
+		ClientResponse response = filtersWr
+				.accept(MediaType.APPLICATION_JSON_TYPE)
+				.type(MediaType.APPLICATION_JSON_TYPE)
+				.get(ClientResponse.class);
+		logger.debug(response.toString());
+		if (response.getStatus() == 204) {
+			return true;
+		}
+		logger.error("recipient not found : " + req.getRecipientMail());
+		return false;
 	}
 }

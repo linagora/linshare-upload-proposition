@@ -4,7 +4,7 @@
 linshare:
 
   # the URL
-  url: http://ubuntu1:8080/linshare/webservice/rest/uploadproposition
+  url: http://127.0.0.1:8080/linshare/webservice/rest/uploadproposition
 
   # the username
   login: 89877610-574a-4e79-aeef-5606b96bde35
