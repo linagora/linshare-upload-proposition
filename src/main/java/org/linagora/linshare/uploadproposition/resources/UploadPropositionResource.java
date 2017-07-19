@@ -1,6 +1,5 @@
 package org.linagora.linshare.uploadproposition.resources;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -9,18 +8,16 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import javax.ws.rs.core.Response.Status;
 
-import net.tanesha.recaptcha.ReCaptchaImpl;
-import net.tanesha.recaptcha.ReCaptchaResponse;
-
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.eclipse.jetty.http.HttpStatus;
 import org.linagora.linshare.uploadproposition.config.LinShareCoreServer;
 import org.linagora.linshare.uploadproposition.config.RecaptchaConfig;
@@ -32,11 +29,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.codahale.metrics.annotation.Timed;
-import com.sun.jersey.api.Responses;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.WebResource.Builder;
+
+import net.tanesha.recaptcha.ReCaptchaImpl;
+import net.tanesha.recaptcha.ReCaptchaResponse;
 
 @Path("/uploadpropositions")
 @Produces(MediaType.APPLICATION_JSON)
@@ -81,9 +76,10 @@ public class UploadPropositionResource {
 					challenge, response);
 			if (!reCaptchaResponse.isValid()) {
 				logger.warn("Captcha failed.");
-				ResponseBuilder error = Responses.clientError();
-				error.entity(new LinShareError(1000, "Captcha failed."));
-				return error.build();
+				ResponseBuilder serverError = Response.serverError();
+				serverError.status(Status.BAD_REQUEST);
+				serverError.entity(new LinShareError(1000, "Captcha failed."));
+				return serverError.build();
 			}
 		}
 
@@ -113,42 +109,25 @@ public class UploadPropositionResource {
 				return true;
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 		}
 		return false;
 	}
 
 	private List<UploadPropositionFilter> getFilters() {
-		WebResource defaultWr = client.resource(server.getUrl());
-		WebResource filtersWr = defaultWr.path("filters");
-		ClientResponse response = filtersWr
+		WebTarget target = client.target(server.getUrl()).path("filters");
+		Response response = target.request(MediaType.APPLICATION_JSON_TYPE)
 				.accept(MediaType.APPLICATION_JSON_TYPE)
-				.type(MediaType.APPLICATION_JSON_TYPE)
-				.get(ClientResponse.class);
+				.get();
 		logger.debug(response.toString());
 		if (response.getStatus() != 200) {
 			throw new RuntimeException("Failed : HTTP error code : "
 					+ response.getStatus());
 		}
-		String jsonStream = response.getEntity(String.class);
-		logger.debug("jsonStream" + jsonStream);
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			List<UploadPropositionFilter> filters = mapper.readValue(
-					jsonStream,
-					new TypeReference<List<UploadPropositionFilter>>() {
-					});
-			logger.debug(filters.toString());
-			return filters;
-		} catch (JsonGenerationException e) {
-			throw new RuntimeException("Failed : JsonGenerationException : "
-					+ e);
-		} catch (JsonMappingException e) {
-			throw new RuntimeException("Failed : JsonGenerationException : "
-					+ e);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed : JsonGenerationException : "
-					+ e);
-		}
+		GenericType<List<UploadPropositionFilter>> responseType = new GenericType<List<UploadPropositionFilter>>(){};
+		List<UploadPropositionFilter> filters= response.readEntity(responseType);
+		logger.debug(filters.toString());
+		return filters;
 	}
 
 	private boolean checkAndApply(UploadRequest req) {
@@ -166,20 +145,18 @@ public class UploadPropositionResource {
 	}
 
 	private void post(UploadRequest req) {
-		WebResource defaultWr = client.resource(server.getUrl());
-		WebResource filtersWr = defaultWr.path("propositions");
-		Builder builder = filtersWr.accept(MediaType.APPLICATION_JSON_TYPE);
-		builder.type(MediaType.APPLICATION_JSON_TYPE);
-		builder.post(req);
+		Entity<UploadRequest> json = Entity.json(req);
+		WebTarget target = client.target(server.getUrl()).path("propositions");
+		target.request(MediaType.APPLICATION_JSON_TYPE)
+			.accept(MediaType.APPLICATION_JSON_TYPE)
+			.post(json);
 	}
 
 	private boolean checkRecipient(UploadRequest req) {
-		WebResource defaultWr = client.resource(server.getUrl());
-		WebResource filtersWr = defaultWr.path("recipients/"+req.getRecipientMail());
-		ClientResponse response = filtersWr
+		WebTarget target = client.target(server.getUrl()).path("recipients/" + req.getRecipientMail());
+		Response response = target.request(MediaType.APPLICATION_JSON_TYPE)
 				.accept(MediaType.APPLICATION_JSON_TYPE)
-				.type(MediaType.APPLICATION_JSON_TYPE)
-				.get(ClientResponse.class);
+				.get();
 		logger.debug(response.toString());
 		if (response.getStatus() == 204) {
 			return true;

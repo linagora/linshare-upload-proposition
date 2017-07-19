@@ -1,52 +1,54 @@
 package org.linagora.linshare.uploadproposition;
 
-import io.dropwizard.Application;
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
 
-import java.net.Authenticator;
-
-import org.linagora.linshare.uploadproposition.config.LinShareAuthenticator;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.linagora.linshare.uploadproposition.config.UploadPropositionConfiguration;
 import org.linagora.linshare.uploadproposition.health.LinShareCoreCheck;
 import org.linagora.linshare.uploadproposition.resources.UploadPropositionResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.json.JSONConfiguration;
+import io.dropwizard.Application;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
+import io.dropwizard.setup.Bootstrap;
+import io.dropwizard.setup.Environment;
 
 public class UploadPropositionApplication extends Application<UploadPropositionConfiguration> {
-	
-	private static final Logger LOGGER = LoggerFactory
-			.getLogger(UploadPropositionApplication.class);
-	
-	
-    public static void main(String[] args) throws Exception {
-        new UploadPropositionApplication().run(args);
-    }
 
-    @Override
-    public String getName() {
-        return "LinShare-UploadProposition";
-    }
+	public static void main(final String[] args) throws Exception {
+		new UploadPropositionApplication().run(args);
+	}
 
-    @Override
-    public void initialize(Bootstrap<UploadPropositionConfiguration> bootstrap) {
-    }
+	@Override
+	public String getName() {
+		return "LinShare-UploadProposition";
+	}
 
-    @Override
-    public void run(UploadPropositionConfiguration configuration,
-                    Environment environment) throws ClassNotFoundException {
-        Authenticator.setDefault(new LinShareAuthenticator(configuration.getServer().getLogin(), configuration.getServer().getPassword()));
-        // Little dirty. DropWizard Jersey client did not work at the time.
-        ClientConfig cc = new DefaultClientConfig();
-        cc.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
-        Client client = Client.create(cc);
-        UploadPropositionResource propositionResource = new UploadPropositionResource(client, configuration.getServer(), configuration.getCaptcha());
-        environment.healthChecks().register("LinShare-Core", new LinShareCoreCheck(propositionResource));
-		environment.jersey().register(propositionResource);
-    }
+	@Override
+	public void initialize(final Bootstrap<UploadPropositionConfiguration> bootstrap) {
+		bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(
+				bootstrap.getConfigurationSourceProvider(), new EnvironmentVariableSubstitutor()));
+	}
+
+	@Override
+	public void run(final UploadPropositionConfiguration configuration, final Environment environment) {
+		HttpAuthenticationFeature authBasic = HttpAuthenticationFeature.basic(
+				configuration.getServer().getLogin(),
+				configuration.getServer().getPassword());
+		final Client client = ClientBuilder.newBuilder()
+				.register(authBasic)
+				.register(JacksonFeature.class)
+				.build();
+		UploadPropositionResource propositionResource = new UploadPropositionResource(
+				client,
+				configuration.getServer(),
+				configuration.getCaptcha());
+		environment.jersey()
+			.register(propositionResource);
+		environment.healthChecks()
+			.register("LinShare-Core", new LinShareCoreCheck(propositionResource));
+	}
+
 }
