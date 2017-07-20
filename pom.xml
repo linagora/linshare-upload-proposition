@@ -176,4 +176,18 @@
 			</releases>
 		</repository>
 	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>Linagora-LinShare-Releases</id>
+			<name>Linagora LinShare Releases</name>
+			<url>https://nexus.linagora.com/content/repositories/linshare-releases</url>
+		</repository>
+		<snapshotRepository>
+			<id>Linagora-LinShare-Snapshots</id>
+			<name>Linagora LinShare Snapshots</name>
+			<url>https://nexus.linagora.com/content/repositories/linshare-snapshots</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 </project>
