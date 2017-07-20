@@ -1,5 +1,6 @@
 # Documentation : https://dropwizard.github.io/dropwizard/manual/configuration.html
 
+# You can use environement variables in this file if you need.
 # LinShare core settings.
 linshare:
 
@@ -55,11 +56,11 @@ logging:
   appenders:
     - type: file
       # Be carefull, no permission error is rise.
-      currentLogFilename: /var/log/linshare-uploadproposition.log
+      currentLogFilename: /var/log/linshare-upload-proposition.log
       threshold: ALL
       archive: true
       # Be carefull, no permission error is rise.
-      archivedLogFilenamePattern: /var/log/linshare-uploadproposition-%d.log
+      archivedLogFilenamePattern: /var/log/linshare-upload-proposition-%d.log
       # 1 =< x =< 50
       archivedFileCount: 5
       timeZone: UTC

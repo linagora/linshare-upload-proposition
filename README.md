@@ -12,7 +12,7 @@ To test the example application run the following commands.
 
 * To run the server run.
 
-        java -jar target/linshare-uploadproposition-<version>.jar server example.yml
+        java -jar target/linshare-upload-proposition-<version>.jar server config.yml
 
 * To hit the ok message.
 
