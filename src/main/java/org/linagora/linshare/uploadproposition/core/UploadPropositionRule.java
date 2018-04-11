@@ -91,6 +91,6 @@ public class UploadPropositionRule {
 			return false;
 		}
 		RuleOperator op = RuleOperator.fromString(this.operator);
-		return op.check(value, compare);
+		return op.check(compare, value);
 	}
 }
